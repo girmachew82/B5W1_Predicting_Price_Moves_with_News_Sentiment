@@ -167,3 +167,37 @@ class QuantivativeAnalysis:
         df['Signal_Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
 
         return df
+    
+
+    def calculate_daily_returns(self, df, price_col='Close'):
+        """
+        Calculate daily returns based on closing prices.
+
+        Parameters:
+        - df (pd.DataFrame): Stock price data.
+        - price_col (str): Column name for closing prices.
+
+        Returns:
+        - pd.DataFrame: DataFrame with a new 'daily_return' column.
+        """
+        try:
+            df = df.copy()
+            df.sort_values(by='Date', inplace=True)
+            df['daily_return'] = df[price_col].pct_change() * 100  # percentage change
+            return df
+        except Exception as e:
+            print("Error in calculate_daily_returns:", str(e))
+            return df
+        
+    def plot_daily_returns(df, ticker=None):
+        if ticker:
+            df = df[df['ticker'] == ticker]
+        plt.figure(figsize=(12, 5))
+        plt.plot(df['Date'], df['daily_return'], label=f"{ticker or 'Stock'} Daily Return")
+        plt.axhline(0, color='gray', linestyle='--')
+        plt.title(f"Daily Returns for {ticker or 'All Stocks'}")
+        plt.xlabel("Date")
+        plt.ylabel("Daily Return (%)")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()

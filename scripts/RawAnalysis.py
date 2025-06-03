@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.feature_extraction.text import CountVectorizer
+from textblob import TextBlob
 
 
 class RawAnalysis:
@@ -431,4 +432,58 @@ class RawAnalysis:
         except Exception as e:
             print("Error in publisher_domain_analysis:", str(e))
 
-    
+    def sentiment_analysis(self, df, text_col='headline'):
+        """
+        Analyze sentiment of each headline in the dataframe.
+        
+        Parameters:
+        - df (pd.DataFrame): DataFrame containing news headlines.
+        - text_col (str): Column name containing the text to analyze.
+
+        Returns:
+        - pd.DataFrame: DataFrame with added sentiment polarity and category.
+        """
+        try:
+            df = df.copy()
+            df[text_col] = df[text_col].astype(str).fillna("")
+
+            # Compute polarity
+            df['sentiment_polarity'] = df[text_col].apply(lambda x: TextBlob(x).sentiment.polarity)
+
+            # Classify sentiment
+            def classify_sentiment(score):
+                if score > 0.1:
+                    return 'positive'
+                elif score < -0.1:
+                    return 'negative'
+                else:
+                    return 'neutral'
+
+            df['sentiment'] = df['sentiment_polarity'].apply(classify_sentiment)
+            return df
+
+        except Exception as e:
+            print("Error in sentiment_analysis:", str(e))
+            return df
+        
+
+
+    def calculate_daily_returns(self, df, price_col='Close'):
+        """
+        Calculate daily returns based on closing prices.
+
+        Parameters:
+        - df (pd.DataFrame): Stock price data.
+        - price_col (str): Column name for closing prices.
+
+        Returns:
+        - pd.DataFrame: DataFrame with a new 'daily_return' column.
+        """
+        try:
+            df = df.copy()
+            df.sort_values(by='Date', inplace=True)
+            df['daily_return'] = df[price_col].pct_change() * 100  # percentage change
+            return df
+        except Exception as e:
+            print("Error in calculate_daily_returns:", str(e))
+            return df
