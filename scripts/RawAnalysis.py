@@ -57,7 +57,36 @@ class RawAnalysis:
             print("❌ 'headline' column not found in the DataFrame.")
         except Exception as e:
             print(f"❌ An error occurred during headline analysis: {e}")
+    def character_stats(self, headlines):
+            """
+            Compute and print basic statistics for headline character lengths.
 
+            Args:
+                headlines (pd.Series): A pandas Series containing headline strings.
+
+            Raises:
+                TypeError: If input is not a pandas Series.
+                ValueError: If Series is empty.
+            """
+            if not isinstance(headlines, pd.Series):
+                raise TypeError("Input must be a pandas Series.")
+
+            if headlines.empty:
+                raise ValueError("Headline Series is empty.")
+
+            # Convert to string and handle missing values
+            headlines = headlines.astype(str).fillna("")
+            char_lengths = headlines.str.len()
+
+            try:
+                print("Character Length Statistics:")
+                print(f"Mean: {char_lengths.mean():.2f}")
+                print(f"Median: {char_lengths.median()}")
+                print(f"Min: {char_lengths.min()}")
+                print(f"Max: {char_lengths.max()}")
+                print(f"Standard Deviation: {char_lengths.std():.2f}")
+            except Exception as e:
+                print(f"An error occurred while calculating stats: {e}")
     def articles_per_publisher(self, df: pd.DataFrame) -> None:
         """
         Counts and visualizes the number of articles per publisher.
