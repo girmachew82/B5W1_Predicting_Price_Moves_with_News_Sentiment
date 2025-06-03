@@ -431,6 +431,4 @@ class RawAnalysis:
         except Exception as e:
             print("Error in publisher_domain_analysis:", str(e))
 
-
-            
-
+    
