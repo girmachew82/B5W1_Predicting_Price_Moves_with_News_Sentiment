@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.feature_extraction.text import CountVectorizer
+
 
 class RawAnalysis:
     def load_data(self, filepath: str) -> pd.DataFrame:
@@ -336,3 +338,99 @@ class RawAnalysis:
             except Exception as e:
                 print(f"Error in publishing_time_distribution: {e}")
                 return pd.Series()
+            
+    def publisher_contribution_analysis(self, df, publisher_col='publisher', headline_col='headline', top_n=10):
+        """
+        Analyze which publishers contribute most and explore differences in the type of news reported.
+
+        Parameters:
+        - df: pandas DataFrame containing the data.
+        - publisher_col: Name of the column containing publisher names.
+        - headline_col: Name of the column containing news headlines.
+        - top_n: Number of top publishers to analyze.
+
+        Returns:
+        - DataFrame with article counts by publisher.
+        - Bar plot of top contributing publishers.
+        - Top keywords per top publisher using bag-of-words.
+        """
+        try:
+            # Drop rows with missing values
+            df = df.dropna(subset=[publisher_col, headline_col])
+            
+            # Count articles per publisher
+            publisher_counts = df[publisher_col].value_counts().head(top_n)
+            print(f"Top {top_n} publishers:\n", publisher_counts)
+
+            # Plotting
+            plt.figure(figsize=(12, 6))
+            sns.barplot(x=publisher_counts.index, y=publisher_counts.values, palette="Set2")
+            plt.title(f"Top {top_n} Publishers by Article Count")
+            plt.xlabel("Publisher")
+            plt.ylabel("Number of Articles")
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.show()
+
+            # Keyword analysis using CountVectorizer for top publishers
+            vectorizer = CountVectorizer(stop_words='english', max_features=100)
+
+            for pub in publisher_counts.index:
+                print(f"\n🔹 Top Keywords for Publisher: {pub}")
+                pub_headlines = df[df[publisher_col] == pub][headline_col].astype(str)
+                X = vectorizer.fit_transform(pub_headlines)
+                keywords = vectorizer.get_feature_names_out()
+                word_freq = X.sum(axis=0).A1
+                keyword_freq = dict(zip(keywords, word_freq))
+                sorted_keywords = sorted(keyword_freq.items(), key=lambda x: x[1], reverse=True)[:10]
+                for word, freq in sorted_keywords:
+                    print(f"{word}: {freq}")
+
+            return publisher_counts.to_frame(name='article_count')
+
+        except Exception as e:
+            print("Error in publisher_contribution_analysis:", str(e))
+
+    def publisher_domain_analysis(self, df, publisher_col='publisher'):
+        """
+        Analyze publisher domains if publisher names are email addresses.
+
+        Parameters:
+        - df: pandas DataFrame containing the data.
+        - publisher_col: Name of the column containing email-like publisher values.
+
+        Returns:
+        - DataFrame with article counts by email domain.
+        - Bar plot of top contributing domains.
+        """
+        try:
+            # Drop missing values in publisher column
+            df = df.dropna(subset=[publisher_col])
+
+            # Extract domain from email (if email format)
+            df['domain'] = df[publisher_col].str.extract(r'@([\w\.-]+)', expand=False)
+
+            # Drop NaN domains (non-email entries)
+            domain_counts = df['domain'].value_counts().dropna().head(10)
+
+            # Display top domains
+            print("Top publisher domains:\n", domain_counts)
+
+            # Plotting
+            plt.figure(figsize=(10, 5))
+            sns.barplot(x=domain_counts.index, y=domain_counts.values, palette='Blues_d')
+            plt.title("Top Publisher Domains (by Email Address)")
+            plt.xlabel("Domain")
+            plt.ylabel("Number of Articles")
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.show()
+
+            return domain_counts.to_frame(name='article_count')
+
+        except Exception as e:
+            print("Error in publisher_domain_analysis:", str(e))
+
+
+            
+
