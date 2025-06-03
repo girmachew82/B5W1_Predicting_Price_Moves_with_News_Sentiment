@@ -260,3 +260,79 @@ class RawAnalysis:
         except Exception as e:
             print(f"Error in detect_publication_spikes: {e}")
             return pd.DataFrame()
+
+    def articles_per_year(self, df, datetime_col='date'):
+        """
+        Calculate and visualize the number of articles published per year.
+
+        Args:
+            df (pd.DataFrame): DataFrame containing a datetime column.
+            datetime_col (str): Name of the datetime column.
+
+        Returns:
+            pd.Series: Yearly count of published articles.
+        """
+        try:
+            df = df.copy()
+            if datetime_col not in df.columns:
+                raise ValueError(f"'{datetime_col}' column not found in DataFrame.")
+
+            df[datetime_col] = pd.to_datetime(df[datetime_col], errors='coerce')
+            df = df.dropna(subset=[datetime_col])
+
+            df['year'] = df[datetime_col].dt.year
+            yearly_counts = df['year'].value_counts().sort_index()
+
+            # Plot
+            yearly_counts.plot(kind='bar', figsize=(10, 5), color='skyblue')
+            plt.title("Number of Articles Published Per Year")
+            plt.xlabel("Year")
+            plt.ylabel("Number of Articles")
+            plt.grid(axis='y')
+            plt.tight_layout()
+            plt.show()
+
+            return yearly_counts
+
+        except Exception as e:
+            print(f"Error in articles_per_year: {e}")
+            return pd.Series()
+    def publishing_time_distribution(self, df, datetime_col='date'):
+            """
+            Analyze and visualize the distribution of publishing times by hour.
+
+            Args:
+                df (pd.DataFrame): DataFrame containing a datetime column.
+                datetime_col (str): Name of the datetime column to analyze.
+
+            Returns:
+                pd.Series: Hourly distribution of article counts.
+            """
+            try:
+                df = df.copy()
+
+                if datetime_col not in df.columns:
+                    raise ValueError(f"'{datetime_col}' column not found.")
+
+                df[datetime_col] = pd.to_datetime(df[datetime_col], errors='coerce')
+                df = df.dropna(subset=[datetime_col])
+
+                df['hour'] = df[datetime_col].dt.hour
+                hour_dist = df['hour'].value_counts().sort_index()
+
+                # Plotting
+                plt.figure(figsize=(10, 5))
+                sns.barplot(x=hour_dist.index, y=hour_dist.values, palette="viridis")
+                plt.title("Distribution of Article Publishing Times by Hour")
+                plt.xlabel("Hour of Day (0–23)")
+                plt.ylabel("Number of Articles")
+                plt.xticks(range(0, 24))
+                plt.grid(axis='y')
+                plt.tight_layout()
+                plt.show()
+
+                return hour_dist
+
+            except Exception as e:
+                print(f"Error in publishing_time_distribution: {e}")
+                return pd.Series()
