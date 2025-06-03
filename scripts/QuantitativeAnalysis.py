@@ -3,6 +3,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.feature_extraction.text import CountVectorizer
 import ta
+import yfinance as yf
+import numpy as np
+from datetime import datetime, timedelta
+from typing import Optional, Union, List, Dict
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
 sns.set(style="whitegrid")
 
 class QuantivativeAnalysis:
@@ -130,3 +137,33 @@ class QuantivativeAnalysis:
 
 
 
+    def calculate_technical_indicators(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Calculate basic technical indicators for the stock data.
+
+        Args:
+            data (pd.DataFrame): Historical stock data
+
+        Returns:
+            pd.DataFrame: Data with added technical indicators
+        """
+        df = data.copy()
+
+        # Calculate Moving Averages
+        df['SMA_20'] = df['Close'].rolling(window=20).mean()
+        df['SMA_50'] = df['Close'].rolling(window=50).mean()
+
+        # Calculate RSI (Relative Strength Index)
+        delta = df['Close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        rs = gain / loss
+        df['RSI'] = 100 - (100 / (1 + rs))
+
+        # Calculate MACD
+        exp1 = df['Close'].ewm(span=12, adjust=False).mean()
+        exp2 = df['Close'].ewm(span=26, adjust=False).mean()
+        df['MACD'] = exp1 - exp2
+        df['Signal_Line'] = df['MACD'].ewm(span=9, adjust=False).mean()
+
+        return df
