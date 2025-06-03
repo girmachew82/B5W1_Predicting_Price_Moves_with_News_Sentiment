@@ -163,3 +163,100 @@ class RawAnalysis:
             print("❌ 'date' column not found in the DataFrame.")
         except Exception as e:
             print(f"❌ An error occurred during publication trend analysis: {e}")
+
+    def time_series_analysis(self, df, datetime_col='date'):
+            """
+            Analyze publication frequency over time and by hour of day.
+
+            Args:
+                df (pd.DataFrame): DataFrame with a datetime column.
+                datetime_col (str): Column name containing datetime information.
+
+            Returns:
+                dict: Contains daily and hourly frequency series.
+            """
+            try:
+                if datetime_col not in df.columns:
+                    raise ValueError(f"'{datetime_col}' column not found in DataFrame.")
+
+                # Convert to datetime and drop invalid
+                df[datetime_col] = pd.to_datetime(df[datetime_col], errors='coerce')
+                df = df.dropna(subset=[datetime_col])
+
+                # Daily frequency
+                daily_counts = df.groupby(df[datetime_col].dt.date).size()
+
+                # Hourly frequency
+                # df['hour'] = df[datetime_col].dt.hour
+                df.loc[:, 'hour'] = df[datetime_col].dt.hour
+                hourly_counts = df.groupby('hour').size()
+
+                # Plotting
+                plt.figure(figsize=(12, 4))
+                daily_counts.plot(title="Articles Published Per Day")
+                plt.xlabel("Date")
+                plt.ylabel("Article Count")
+                plt.grid(True)
+                plt.tight_layout()
+                plt.show()
+
+                plt.figure(figsize=(8, 4))
+                hourly_counts.plot(kind='bar', title="Articles by Hour of Day", xlabel='Hour', ylabel='Count')
+                plt.grid(True)
+                plt.tight_layout()
+                plt.show()
+
+                return {
+                    "daily_counts": daily_counts,
+                    "hourly_counts": hourly_counts
+                }
+
+            except Exception as e:
+                print(f"Error in time_series_analysis: {e}")
+                return {}
+            
+    def detect_publication_spikes(self, df, datetime_col='date', threshold=2.0):
+        """
+        Detect days with spikes in article publication volume based on Z-score.
+
+        Args:
+            df (pd.DataFrame): DataFrame with a datetime column.
+            datetime_col (str): Name of the column containing datetime data.
+            threshold (float): Z-score threshold for spike detection.
+
+        Returns:
+            pd.DataFrame: DataFrame with spike dates and article counts.
+        """
+        try:
+            df = df.copy()
+            if datetime_col not in df.columns:
+                raise ValueError(f"'{datetime_col}' column not found in DataFrame.")
+
+            df[datetime_col] = pd.to_datetime(df[datetime_col], errors='coerce')
+            df = df.dropna(subset=[datetime_col])
+
+            daily_counts = df.groupby(df[datetime_col].dt.date).size()
+            mean = daily_counts.mean()
+            std = daily_counts.std()
+            z_scores = (daily_counts - mean) / std
+
+            spikes = daily_counts[z_scores > threshold]
+
+            # Plot
+            plt.figure(figsize=(12, 4))
+            daily_counts.plot(label="Daily Count")
+            spikes.plot(style='ro', label="Spike", markersize=6)
+            plt.axhline(mean + threshold * std, color='red', linestyle='--', label='Spike Threshold')
+            plt.title("Spike Detection in Article Publications")
+            plt.xlabel("Date")
+            plt.ylabel("Article Count")
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
+
+            return spikes.reset_index(name='article_count')
+
+        except Exception as e:
+            print(f"Error in detect_publication_spikes: {e}")
+            return pd.DataFrame()
